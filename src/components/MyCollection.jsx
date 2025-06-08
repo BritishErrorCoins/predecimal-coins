@@ -1,17 +1,15 @@
-// src/components/MyCollection.jsx
-
 import React, { useState } from "react";
 import { exportToCSV } from "../utils/exportUtils";
-import sampleData from "../data/sampleCollection.json"; // You can replace this with your dataset
+import fullData from "../data/PreDecCoin-dataset.json";
 
 function MyCollection() {
-  const [coins, setCoins] = useState(sampleData);
+  const [coins, setCoins] = useState(fullData.filter((coin) => coin.inCollection));
   const [search, setSearch] = useState("");
 
   const handleSell = (id) => {
     const updated = coins.filter((coin) => coin.id !== id);
     setCoins(updated);
-    // You can push this coin to your Sold page via context or backend logic
+    // Add logic here to push to SoldCoins context/backend later
   };
 
   const handleChange = (id, field, value) => {
@@ -62,7 +60,7 @@ function MyCollection() {
               <td>
                 <input
                   type="text"
-                  value={coin.purchasePrice}
+                  value={coin.purchasePrice || ""}
                   onChange={(e) =>
                     handleChange(coin.id, "purchasePrice", e.target.value)
                   }
@@ -71,7 +69,7 @@ function MyCollection() {
               <td>
                 <input
                   type="text"
-                  value={coin.notes}
+                  value={coin.notes || ""}
                   onChange={(e) =>
                     handleChange(coin.id, "notes", e.target.value)
                   }

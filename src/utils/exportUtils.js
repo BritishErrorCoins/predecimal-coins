@@ -12,5 +12,5 @@ export function exportToCSV(data, filename = "export.csv") {
   ].join("\r\n");
 
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  saveAs(blob, filename);
+  saveAs(blob, `${filename}.csv`);
 }
