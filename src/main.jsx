@@ -1,13 +1,23 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import Home from './components/Home';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import MyWantlist from './components/MyWantlist';
+import Catalog from './components/Catalog';
+import SoldCoins from './components/SoldCoins';
+import BrowseCoins from './components/BrowseCoins';
+import MyCollection from './components/MyCollection';
+import './styles/theme.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Catalog />} /> {/* Set Catalog as default */}
+        <Route path="/collection" element={<MyCollection />} />
+        <Route path="/browse" element={<BrowseCoins />} />
+        <Route path="/sold" element={<SoldCoins />} />
+        <Route path="/wantlist" element={<MyWantlist />} />
+        <Route path="/catalog" element={<Catalog />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
