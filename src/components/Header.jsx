@@ -14,7 +14,7 @@ const Header = () => {
         <h1 className="app-title">Predecimal Coin Collector</h1>
       </div>
       <nav className="nav-bar">
-        <NavLink to="/browse">Browse</NavLink>
+        <NavLink to="/browsecoins">Browse</NavLink>
         <NavLink to="/collection">My Collection</NavLink>
         <NavLink to="/wantlist">My Wantlist</NavLink>
         <NavLink to="/sold">Sold</NavLink>
