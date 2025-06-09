@@ -1,15 +1,23 @@
-import React, { useState } from "react";
-import { exportToCSV } from "../utils/exportUtils";
-import fullData from "../data/PreDecCoin-dataset.json";
+// src/components/MyCollection.jsx
+
+import React, { useState, useEffect } from 'react';
+import { exportToCSV } from '../utils/exportUtils';
+import dataset from '../data/PreDecCoin-dataset.json';
 
 function MyCollection() {
-  const [coins, setCoins] = useState(fullData.filter((coin) => coin.inCollection));
-  const [search, setSearch] = useState("");
+  const [coins, setCoins] = useState([]);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem('myCollection')) || [];
+    setCoins(stored);
+  }, []);
 
   const handleSell = (id) => {
     const updated = coins.filter((coin) => coin.id !== id);
     setCoins(updated);
-    // Add logic here to push to SoldCoins context/backend later
+    localStorage.setItem('myCollection', JSON.stringify(updated));
+    // Additional logic can be added to move to sold list
   };
 
   const handleChange = (id, field, value) => {
@@ -17,6 +25,7 @@ function MyCollection() {
       coin.id === id ? { ...coin, [field]: value } : coin
     );
     setCoins(updated);
+    localStorage.setItem('myCollection', JSON.stringify(updated));
   };
 
   const filteredCoins = coins.filter((coin) =>
@@ -33,9 +42,9 @@ function MyCollection() {
         placeholder="Search collection..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        style={{ marginBottom: "1rem" }}
+        style={{ marginBottom: '1rem' }}
       />
-      <button onClick={() => exportToCSV(filteredCoins, "MyCollection")}>
+      <button onClick={() => exportToCSV(filteredCoins, 'MyCollection')}>
         Export CSV
       </button>
       <table>
@@ -60,18 +69,18 @@ function MyCollection() {
               <td>
                 <input
                   type="text"
-                  value={coin.purchasePrice || ""}
+                  value={coin.purchasePrice}
                   onChange={(e) =>
-                    handleChange(coin.id, "purchasePrice", e.target.value)
+                    handleChange(coin.id, 'purchasePrice', e.target.value)
                   }
                 />
               </td>
               <td>
                 <input
                   type="text"
-                  value={coin.notes || ""}
+                  value={coin.notes}
                   onChange={(e) =>
-                    handleChange(coin.id, "notes", e.target.value)
+                    handleChange(coin.id, 'notes', e.target.value)
                   }
                 />
               </td>
