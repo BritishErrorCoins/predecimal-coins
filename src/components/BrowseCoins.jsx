@@ -1,151 +1,130 @@
 // src/components/BrowseCoins.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import dataset from '../data/PreDecCoin-dataset.json';
-import { exportToCSV } from '../utils/exportUtils';
 import '../styles/theme.css';
 
 const BrowseCoins = () => {
   const [coins, setCoins] = useState([]);
   const [filters, setFilters] = useState({
-    denomination: '',
-    monarch: '',
-    metal: '',
-    type: '',
+    Monarch: '',
+    Denomination: '',
+    Metal: '',
+    Type: ''
   });
-  const [search, setSearch] = useState('');
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
   useEffect(() => {
-    setCoins(dataset);
+    const validCoins = dataset.filter(coin => coin.ID && coin.Denomination && coin.Monarch);
+    setCoins(validCoins);
   }, []);
 
-  const handleFilterChange = (field, value) => {
-    setFilters((prev) => ({ ...prev, [field]: value }));
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
   };
 
   const clearFilters = () => {
-    setFilters({
-      denomination: '',
-      monarch: '',
-      metal: '',
-      type: '',
-    });
+    setFilters({ Monarch: '', Denomination: '', Metal: '', Type: '' });
   };
 
   const filteredCoins = coins.filter((coin) => {
     return (
-      (!filters.denomination || coin.denomination === filters.denomination) &&
-      (!filters.monarch || coin.monarch === filters.monarch) &&
-      (!filters.metal || coin.metal === filters.metal) &&
-      (!filters.type || coin.type === filters.type) &&
-      Object.values(coin).some((val) =>
-        String(val).toLowerCase().includes(search.toLowerCase())
-      )
+      (!filters.Monarch || coin.Monarch === filters.Monarch) &&
+      (!filters.Denomination || coin.Denomination === filters.Denomination) &&
+      (!filters.Metal || coin.Metal === filters.Metal) &&
+      (!filters.Type || coin.Type === filters.Type)
     );
   });
 
-  const addToCollection = (coin) => {
-    // Add logic for adding to My Collection
-    alert(`Added to My Collection: ${coin.denomination} ${coin.year}`);
+  const sortedCoins = [...filteredCoins].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+    const aVal = a[sortConfig.key] || '';
+    const bVal = b[sortConfig.key] || '';
+    const compare = aVal.toString().localeCompare(bVal.toString(), undefined, { numeric: true });
+    return sortConfig.direction === 'asc' ? compare : -compare;
+  });
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
   };
 
-  const addToWantlist = (coin) => {
-    const reason = prompt(
-      `Why do you want this coin?\n1. Missing from my collection\n2. Upgrade\n3. Desire duplicates\n4. Other`
-    );
-    if (reason) {
-      alert(`Added to Wantlist with reason: ${reason}`);
-      // Add logic to persist this
-    }
+  const uniqueValues = (key) => [...new Set(coins.map(c => c[key]).filter(Boolean))];
+
+  const handleAddToCollection = (coin) => {
+    console.log('Add to Collection:', coin);
+    // Your collection logic here
   };
 
-  const uniqueOptions = (field) => {
-    return [...new Set(coins.map((coin) => coin[field]))].sort();
+  const handleAddToWantlist = (coin) => {
+    console.log('Add to Wantlist:', coin);
+    // Your wantlist logic here
   };
 
   return (
     <div className="page-container">
-      <h1>Browse Catalog</h1>
+      <h2>Browse Coins</h2>
 
-      <div className="filters sticky-header">
-        <input
-          type="text"
-          placeholder="Search..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-
-        <select
-          value={filters.denomination}
-          onChange={(e) => handleFilterChange('denomination', e.target.value)}
-        >
-          <option value="">All Denominations</option>
-          {uniqueOptions('denomination').map((val) => (
-            <option key={val}>{val}</option>
-          ))}
-        </select>
-
-        <select
-          value={filters.monarch}
-          onChange={(e) => handleFilterChange('monarch', e.target.value)}
-        >
+      <div className="filters">
+        <select name="Monarch" value={filters.Monarch} onChange={handleFilterChange}>
           <option value="">All Monarchs</option>
-          {uniqueOptions('monarch').map((val) => (
-            <option key={val}>{val}</option>
-          ))}
+          {uniqueValues('Monarch').map((val) => <option key={val}>{val}</option>)}
         </select>
-
-        <select
-          value={filters.metal}
-          onChange={(e) => handleFilterChange('metal', e.target.value)}
-        >
+        <select name="Denomination" value={filters.Denomination} onChange={handleFilterChange}>
+          <option value="">All Denominations</option>
+          {uniqueValues('Denomination').map((val) => <option key={val}>{val}</option>)}
+        </select>
+        <select name="Metal" value={filters.Metal} onChange={handleFilterChange}>
           <option value="">All Metals</option>
-          {uniqueOptions('metal').map((val) => (
-            <option key={val}>{val}</option>
-          ))}
+          {uniqueValues('Metal').map((val) => <option key={val}>{val}</option>)}
         </select>
-
-        <select
-          value={filters.type}
-          onChange={(e) => handleFilterChange('type', e.target.value)}
-        >
+        <select name="Type" value={filters.Type} onChange={handleFilterChange}>
           <option value="">All Types</option>
-          {uniqueOptions('type').map((val) => (
-            <option key={val}>{val}</option>
-          ))}
+          {uniqueValues('Type').map((val) => <option key={val}>{val}</option>)}
         </select>
-
         <button onClick={clearFilters}>Clear Filters</button>
-        <button onClick={() => exportToCSV(filteredCoins, 'BrowseCoins')}>Export CSV</button>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Denomination</th>
-            <th>Monarch</th>
-            <th>Metal</th>
-            <th>Type</th>
-            <th>Year</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredCoins.map((coin) => (
-            <tr key={coin.id}>
-              <td>{coin.denomination}</td>
-              <td>{coin.monarch}</td>
-              <td>{coin.metal}</td>
-              <td>{coin.type}</td>
-              <td>{coin.year}</td>
-              <td>
-                <button onClick={() => addToCollection(coin)}>Add to My Collection</button>
-                <button onClick={() => addToWantlist(coin)}>Add to Wantlist</button>
-              </td>
+      <div className="table-wrapper">
+        <table className="coin-table">
+          <thead>
+            <tr>
+              {['ID', 'Denomination', 'Monarch', 'Metal', 'Type', 'Strike Type', 'Variety', 'Year'].map((col) => (
+                <th key={col} onClick={() => handleSort(col)} style={{ cursor: 'pointer' }}>
+                  {col}{sortConfig.key === col ? (sortConfig.direction === 'asc' ? ' ↑' : ' ↓') : ''}
+                </th>
+              ))}
+              <th>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {sortedCoins.map((coin) => (
+              <tr key={coin.ID}>
+                <td>{coin.ID}</td>
+                <td>{coin.Denomination}</td>
+                <td>{coin.Monarch}</td>
+                <td>{coin.Metal}</td>
+                <td>{coin.Type}</td>
+                <td>{coin['Strike Type']}</td>
+                <td>{coin.Variety}</td>
+                <td>{coin.Year}</td>
+                <td>
+                  <button onClick={() => handleAddToCollection(coin)}>Add to My Collection</button>
+                  <button onClick={() => handleAddToWantlist(coin)}>Add to My Wantlist</button>
+                </td>
+              </tr>
+            ))}
+            {sortedCoins.length === 0 && (
+              <tr>
+                <td colSpan="9" className="no-results">No matching coins.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
