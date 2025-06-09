@@ -1,113 +1,171 @@
-import React, { useEffect, useState } from 'react';
-import { utils, write } from 'xlsx';
-import { saveAs } from 'file-saver';
+import React, { useState } from 'react';
+import { exportToCSV } from '../utils/exportUtils';
+import '../styles/theme.css';
 
-const SoldCoins = () => {
-  const [sold, setSold] = useState([]);
-  const [filters, setFilters] = useState({
-    monarch: '',
-    denomination: '',
-    fromDate: '',
-    toDate: ''
-  });
+const initialSoldCoins = [
+  {
+    id: 1,
+    denomination: 'Penny',
+    monarch: 'Victoria',
+    year: 1874,
+    purchasePrice: 2.5,
+    sellPrice: 6.0,
+    dateSold: '2024-04-15',
+    notes: 'Very fine condition',
+  },
+  {
+    id: 2,
+    denomination: 'Halfpenny',
+    monarch: 'George V',
+    year: 1912,
+    purchasePrice: 1.0,
+    sellPrice: 0.8,
+    dateSold: '2024-06-01',
+    notes: 'Slight wear',
+  },
+];
 
-  useEffect(() => {
-    const data = localStorage.getItem('soldCoins');
-    setSold(data ? JSON.parse(data) : []);
-  }, []);
+function SoldCoins() {
+  const [soldCoins, setSoldCoins] = useState(initialSoldCoins);
+  const [search, setSearch] = useState('');
+  const [monarchFilter, setMonarchFilter] = useState('');
+  const [denominationFilter, setDenominationFilter] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
-  const filtered = sold.filter(c => {
-    const matchesMonarch = !filters.monarch || c.monarch === filters.monarch;
-    const matchesDenom = !filters.denomination || c.denomination === filters.denomination;
-    const matchesFrom = !filters.fromDate || new Date(c.dateSold) >= new Date(filters.fromDate);
-    const matchesTo = !filters.toDate || new Date(c.dateSold) <= new Date(filters.toDate);
-    return matchesMonarch && matchesDenom && matchesFrom && matchesTo;
-  });
-
-  const exportCSV = () => {
-    const sheet = utils.json_to_sheet(filtered);
-    const book = utils.book_new();
-    utils.book_append_sheet(book, sheet, 'SoldCoins');
-    const blob = new Blob([write(book, { bookType: 'xlsx', type: 'array' })], { type: 'application/octet-stream' });
-    saveAs(blob, 'SoldCoins.xlsx');
+  const handleChange = (id, field, value) => {
+    const updated = soldCoins.map((coin) =>
+      coin.id === id ? { ...coin, [field]: value } : coin
+    );
+    setSoldCoins(updated);
   };
 
-  return (
-    <div style={{ padding: '1rem' }}>
-      <h2>Sold Coins</h2>
+  const filtered = soldCoins.filter((coin) => {
+    const matchesSearch = Object.values(coin).some((val) =>
+      String(val).toLowerCase().includes(search.toLowerCase())
+    );
+    const matchesMonarch = monarchFilter ? coin.monarch === monarchFilter : true;
+    const matchesDenomination = denominationFilter
+      ? coin.denomination === denominationFilter
+      : true;
+    const matchesDate =
+      (!startDate || coin.dateSold >= startDate) &&
+      (!endDate || coin.dateSold <= endDate);
+    return matchesSearch && matchesMonarch && matchesDenomination && matchesDate;
+  });
 
-      <div className="filters">
-        <label>
-          Monarch:
-          <input
-            value={filters.monarch}
-            onChange={e => setFilters({ ...filters, monarch: e.target.value })}
-            placeholder="Monarch"
-          />
-        </label>
-        <label>
-          Denomination:
-          <input
-            value={filters.denomination}
-            onChange={e => setFilters({ ...filters, denomination: e.target.value })}
-            placeholder="Denomination"
-          />
-        </label>
-        <label>
-          From:
-          <input
-            type="date"
-            value={filters.fromDate}
-            onChange={e => setFilters({ ...filters, fromDate: e.target.value })}
-          />
-        </label>
-        <label>
-          To:
-          <input
-            type="date"
-            value={filters.toDate}
-            onChange={e => setFilters({ ...filters, toDate: e.target.value })}
-          />
-        </label>
-        <button onClick={() => setFilters({ monarch: '', denomination: '', fromDate: '', toDate: '' })}>Clear</button>
-        <button onClick={exportCSV}>Export</button>
+  const totalProfit = filtered.reduce(
+    (acc, coin) => acc + (coin.sellPrice - coin.purchasePrice),
+    0
+  );
+
+  return (
+    <div className="page-container">
+      <h1>Sold Coins</h1>
+
+      <div className="filter-row">
+        <input
+          type="text"
+          placeholder="Search sold coins..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select value={monarchFilter} onChange={(e) => setMonarchFilter(e.target.value)}>
+          <option value="">All Monarchs</option>
+          <option value="Victoria">Victoria</option>
+          <option value="George V">George V</option>
+          {/* Add more as needed */}
+        </select>
+        <select
+          value={denominationFilter}
+          onChange={(e) => setDenominationFilter(e.target.value)}
+        >
+          <option value="">All Denominations</option>
+          <option value="Penny">Penny</option>
+          <option value="Halfpenny">Halfpenny</option>
+          {/* Add more as needed */}
+        </select>
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+        />
+        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+        <button onClick={() => exportToCSV(filtered, 'SoldCoins')}>Export CSV</button>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th>Monarch</th>
             <th>Denomination</th>
+            <th>Monarch</th>
             <th>Year</th>
             <th>Purchase (£)</th>
             <th>Sell (£)</th>
+            <th>Profit (£)</th>
             <th>Date Sold</th>
-            <th>Profit</th>
             <th>Notes</th>
           </tr>
         </thead>
         <tbody>
-          {filtered.map((coin, index) => {
-            const profit = (parseFloat(coin.sellPrice) || 0) - (parseFloat(coin.purchasePrice) || 0);
+          {filtered.map((coin) => {
+            const profit = coin.sellPrice - coin.purchasePrice;
             return (
-              <tr key={index}>
-                <td>{coin.monarch}</td>
+              <tr key={coin.id}>
                 <td>{coin.denomination}</td>
+                <td>{coin.monarch}</td>
                 <td>{coin.year}</td>
-                <td>£{parseFloat(coin.purchasePrice || 0).toFixed(2)}</td>
-                <td>£{parseFloat(coin.sellPrice || 0).toFixed(2)}</td>
-                <td>{coin.dateSold}</td>
+                <td>
+                  <input
+                    type="number"
+                    value={coin.purchasePrice}
+                    onChange={(e) =>
+                      handleChange(coin.id, 'purchasePrice', parseFloat(e.target.value))
+                    }
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    value={coin.sellPrice}
+                    onChange={(e) =>
+                      handleChange(coin.id, 'sellPrice', parseFloat(e.target.value))
+                    }
+                  />
+                </td>
                 <td style={{ color: profit >= 0 ? 'green' : 'red' }}>
                   £{profit.toFixed(2)}
                 </td>
-                <td>{coin.notes || ''}</td>
+                <td>
+                  <input
+                    type="date"
+                    value={coin.dateSold}
+                    onChange={(e) =>
+                      handleChange(coin.id, 'dateSold', e.target.value)
+                    }
+                  />
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    value={coin.notes}
+                    onChange={(e) => handleChange(coin.id, 'notes', e.target.value)}
+                  />
+                </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+
+      <div style={{ marginTop: '1rem', fontWeight: 'bold' }}>
+        Total Profit:{" "}
+        <span style={{ color: totalProfit >= 0 ? 'green' : 'red' }}>
+          £{totalProfit.toFixed(2)}
+        </span>
+      </div>
     </div>
   );
-};
+}
 
 export default SoldCoins;
