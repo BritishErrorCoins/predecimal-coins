@@ -1,118 +1,114 @@
-// src/components/BrowseCoins.jsx
-
 import React, { useState, useEffect } from 'react';
-import coinData from '../data/PreDecCoin-dataset.json';
+import dataset from '../data/PreDecCoin-dataset.json';
 import '../styles/theme.css';
 
 const BrowseCoins = () => {
-  const [data, setData] = useState([]);
+  const [coins, setCoins] = useState([]);
   const [filtered, setFiltered] = useState([]);
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
-
+  const [sortField, setSortField] = useState('');
+  const [sortAsc, setSortAsc] = useState(true);
   const [filters, setFilters] = useState({
     monarch: '',
     metal: '',
     denomination: '',
-    type: ''
+    type: '',
   });
 
   useEffect(() => {
-    setData(coinData);
-    setFiltered(coinData);
+    setCoins(dataset);
+    setFiltered(dataset);
   }, []);
 
   useEffect(() => {
-    let filteredData = [...data];
-    Object.keys(filters).forEach((key) => {
-      if (filters[key]) {
-        filteredData = filteredData.filter((item) =>
-          item[key]?.toLowerCase().includes(filters[key].toLowerCase())
-        );
-      }
-    });
-    setFiltered(filteredData);
-  }, [filters, data]);
+    let results = coins;
 
-  const handleSort = (key) => {
-    let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
+    // Apply filters
+    if (filters.monarch) {
+      results = results.filter(c => c.Monarch === filters.monarch);
     }
-    setSortConfig({ key, direction });
+    if (filters.metal) {
+      results = results.filter(c => c.Metal === filters.metal);
+    }
+    if (filters.denomination) {
+      results = results.filter(c => c.Denomination === filters.denomination);
+    }
+    if (filters.type) {
+      results = results.filter(c => c.Type === filters.type);
+    }
 
-    const sorted = [...filtered].sort((a, b) => {
-      const aVal = a[key]?.toString().toLowerCase() || '';
-      const bVal = b[key]?.toString().toLowerCase() || '';
-      if (aVal < bVal) return direction === 'asc' ? -1 : 1;
-      if (aVal > bVal) return direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-    setFiltered(sorted);
+    // Apply sorting
+    if (sortField) {
+      results = [...results].sort((a, b) => {
+        const valA = a[sortField]?.toString().toLowerCase() || '';
+        const valB = b[sortField]?.toString().toLowerCase() || '';
+        return sortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      });
+    }
+
+    setFiltered(results);
+  }, [coins, filters, sortField, sortAsc]);
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortField(field);
+      setSortAsc(true);
+    }
   };
 
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const clearFilters = () => {
-    setFilters({ monarch: '', metal: '', denomination: '', type: '' });
-  };
+  const uniqueValues = (key) => [...new Set(coins.map(c => c[key]).filter(Boolean))];
 
   return (
-    <div className="page">
-      <h2>Browse Coins</h2>
+    <div className="page-container">
+      <h2>Browse Catalog</h2>
 
       <div className="filters">
-        <input
-          name="monarch"
-          placeholder="Filter by Monarch"
-          value={filters.monarch}
-          onChange={handleFilterChange}
-        />
-        <input
-          name="metal"
-          placeholder="Filter by Metal"
-          value={filters.metal}
-          onChange={handleFilterChange}
-        />
-        <input
-          name="denomination"
-          placeholder="Filter by Denomination"
-          value={filters.denomination}
-          onChange={handleFilterChange}
-        />
-        <input
-          name="type"
-          placeholder="Filter by Type"
-          value={filters.type}
-          onChange={handleFilterChange}
-        />
-        <button onClick={clearFilters}>Clear Filters</button>
+        <select value={filters.monarch} onChange={e => setFilters({ ...filters, monarch: e.target.value })}>
+          <option value="">All Monarchs</option>
+          {uniqueValues('Monarch').map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+
+        <select value={filters.metal} onChange={e => setFilters({ ...filters, metal: e.target.value })}>
+          <option value="">All Metals</option>
+          {uniqueValues('Metal').map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+
+        <select value={filters.denomination} onChange={e => setFilters({ ...filters, denomination: e.target.value })}>
+          <option value="">All Denominations</option>
+          {uniqueValues('Denomination').map(d => <option key={d} value={d}>{d}</option>)}
+        </select>
+
+        <select value={filters.type} onChange={e => setFilters({ ...filters, type: e.target.value })}>
+          <option value="">All Types</option>
+          {uniqueValues('Type').map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+
+        <button onClick={() => setFilters({ monarch: '', metal: '', denomination: '', type: '' })}>
+          Clear Filters
+        </button>
       </div>
 
       <table className="coin-table">
         <thead>
           <tr>
-            <th onClick={() => handleSort('monarch')}>Monarch</th>
-            <th onClick={() => handleSort('denomination')}>Denomination</th>
-            <th onClick={() => handleSort('type')}>Type</th>
-            <th onClick={() => handleSort('metal')}>Metal</th>
-            <th onClick={() => handleSort('strike')}>Strike</th>
-            <th onClick={() => handleSort('variety')}>Variety</th>
-            <th onClick={() => handleSort('year')}>Year</th>
+            <th onClick={() => handleSort('Monarch')}>Monarch</th>
+            <th onClick={() => handleSort('Denomination')}>Denomination</th>
+            <th onClick={() => handleSort('Year')}>Year</th>
+            <th onClick={() => handleSort('Metal')}>Metal</th>
+            <th onClick={() => handleSort('Type')}>Type</th>
+            <th onClick={() => handleSort('Variety')}>Variety</th>
           </tr>
         </thead>
         <tbody>
-          {filtered.map((coin, index) => (
-            <tr key={index}>
-              <td>{coin.monarch}</td>
-              <td>{coin.denomination}</td>
-              <td>{coin.type}</td>
-              <td>{coin.metal}</td>
-              <td>{coin.strike}</td>
-              <td>{coin.variety}</td>
-              <td>{coin.year}</td>
+          {filtered.map((coin, idx) => (
+            <tr key={idx}>
+              <td>{coin.Monarch}</td>
+              <td>{coin.Denomination}</td>
+              <td>{coin.Year}</td>
+              <td>{coin.Metal}</td>
+              <td>{coin.Type}</td>
+              <td>{coin.Variety}</td>
             </tr>
           ))}
         </tbody>
